@@ -463,7 +463,6 @@ std::tuple<Point2D, Point2D, Point2D> findNLoptParameters_Circle(
         default: algo = nlopt::LN_COBYLA; break;
     }
     
-    // 设置优化问题数据
     OptData opt_data;
     opt_data.p0 = &p0;
     opt_data.target_point = &target_point;
@@ -472,14 +471,11 @@ std::tuple<Point2D, Point2D, Point2D> findNLoptParameters_Circle(
     opt_data.target_length = target_length;
     opt_data.r_min = r_min;
     
-    // 创建优化器，3个优化变量
     nlopt::opt optimizer(algo, 3);
     
-    // 设置优化变量的范围
     std::vector<double> lower_bounds(3);
     std::vector<double> upper_bounds(3);
     
-    // 角度范围 (PI/2 到 3PI/2)
     lower_bounds[0] = PI / 2;
     upper_bounds[0] = PI * 3 / 2;
     
@@ -494,13 +490,9 @@ std::tuple<Point2D, Point2D, Point2D> findNLoptParameters_Circle(
     optimizer.set_lower_bounds(lower_bounds);
     optimizer.set_upper_bounds(upper_bounds);
     
-    // 设置目标函数
     optimizer.set_min_objective(objective_function, &opt_data);
-    
-    // 添加曲率约束
     optimizer.add_inequality_constraint(constraint_function, &opt_data, 1e-8);
     
-    // 设置终止条件
     optimizer.set_xtol_rel(1e-4);  // 相对误差 所有参数在连续迭代之间的相对变化都小于 0.01% 时
     optimizer.set_maxeval(500);    // 最大评估次数
     

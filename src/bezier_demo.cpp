@@ -1,4 +1,5 @@
-#include "bezier_api.hpp"
+// #include "bezier_api.hpp"
+#include "bezier.hpp"
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -138,6 +139,84 @@ int demo_nlopt_circle(
     return 0;
 }
 
+int demo_multi()
+{
+    // 创建多个弹的数据
+    std::vector<bezier::BezierData> missiles;
+    
+    bezier::BezierData m1;
+    m1.start_point = {-14922.974681, -13310.281983};     // 起始点
+    m1.theta0 = 0.640792;                 // 起始航向 (弧度，0表示向东)
+    m1.speed = 200;                 // 速度
+    m1.r_min = 2373.839956;                  // 最小转弯半径
+    missiles.push_back(m1);
+    
+    bezier::BezierData m2;
+    m2.start_point = {-14920.476178, -9972.019593};    // 不同的起始点
+    m2.theta0 = 0.641107;             // 向西
+    m2.speed = 200;                  // 不同的速度
+    m2.r_min = 2373.839956;                  // 不同的最小转弯半径
+    missiles.push_back(m2);
+    
+    bezier::BezierData m3;
+    m3.start_point = {-14919.097693, -6631.636326};  // 不同的起始点
+    m3.theta0 = 0.641872;              // 向北
+    m3.speed = 200;                 // 不同的速度
+    m3.r_min = 2373.839956;                  // 不同的最小转弯半径
+    missiles.push_back(m3);
+    
+    bezier::Point2D target = {0, 0};
+    double radius = 8000;
+    
+    // 计算最优路径
+    auto paths = bezier::optimizeMultiMissilePaths(missiles, target, radius);
+    
+    // 输出路径点到文件，方便可视化
+    for (int i = 0; i < paths.size(); i++) {
+        // auto [p0, p1, p2, p3] = paths[i];
+        bezier::Point2D p0 = std::get<0>(paths[i]);
+        bezier::Point2D p1 = std::get<1>(paths[i]);
+        bezier::Point2D p2 = std::get<2>(paths[i]);
+        bezier::Point2D p3 = std::get<3>(paths[i]);
+        
+        std::string filename = "../output/missile_" + std::to_string(i+1) + "_path.txt";
+        bezier::outputBezierCurvePoints(p0, p1, p2, p3, target, radius, filename, 100);
+    }
+    return 0;
+}
+
+int demo_multi_txt()
+{
+    std::vector<bezier::BezierData> missiles;
+    bezier::Point2D target;
+    double radius = 0.0;
+    double target_length = 0.0;
+    double rad_min = 0.0;
+
+    loadMissileDataFromFile("../data/multi_missile.txt", missiles, target, radius, target_length, rad_min);
+    
+    // 计算最优路径
+    auto paths = bezier::optimizeMultiMissilePaths(missiles, target, radius);
+    
+    // 输出路径点到文件，方便可视化
+    for (int i = 0; i < paths.size(); i++) {
+        // auto [p0, p1, p2, p3] = paths[i];
+        bezier::Point2D p0 = std::get<0>(paths[i]);
+        bezier::Point2D p1 = std::get<1>(paths[i]);
+        bezier::Point2D p2 = std::get<2>(paths[i]);
+        bezier::Point2D p3 = std::get<3>(paths[i]);
+        
+        std::string filename = "../output/missile_" + std::to_string(i+1) + "_path.txt";
+        bezier::outputBezierCurvePoints(p0, p1, p2, p3, target, radius, filename, 100);
+
+        // 检查每个曲线的最大曲率
+        double max_curvature = bezier::findMaxCurvature(p0, p1, p2, p3, 0.01);
+        double tmp_radius = 1.0 / max_curvature;
+        std::cout << "弹道 " << (i+1) <<  " R_min: " << rad_min << ", R_true: " << tmp_radius << std::endl;
+    }
+    return 0;
+}
+
 int main()
 {
     /* 
@@ -150,6 +229,7 @@ int main()
     LENGTH:13996.469183
     RAD_MIN:2000.000000
      */
+#if 0  // 单DD测试用例
     // 使用新的InitData结构创建测试案例
     InitData c0(-14922.974681, -13310.281983, 0, 0, 8000, 0.640792, 13996.469183, 2000);
     InitData c1(-14920.476178, -9972.019593, 0, 0, 8000, 0.641107, 13996.469183, 2000);
@@ -171,6 +251,12 @@ int main()
     demo_nlopt_circle(c0.point_0, c0.target_point, c0.r_target, c0.theata_0, c0.target_length, c0.r_min, point_0);
     demo_nlopt_circle(c1.point_0, c1.target_point, c1.r_target, c1.theata_0, c1.target_length, c1.r_min, point_1);
     demo_nlopt_circle(c2.point_0, c2.target_point, c2.r_target, c2.theata_0, c2.target_length, c2.r_min, point_2);
-    
+#endif
+
+#if 1  // 多DD测试用例
+    // demo_multi();
+    demo_multi_txt();
+#endif
+
     return 0;
 }
