@@ -7,10 +7,14 @@ namespace bezier {
  */
 double multi_missile_objective_function(const std::vector<double> &x, std::vector<double> &grad, void *data) {
     MultiMissileOptData *opt_data = reinterpret_cast<MultiMissileOptData*>(data);
-    
+
     // 计算总体误差
     double total_error = 0.0;
     int num_missiles = opt_data->missiles.size();
+    // std::vector<Point2D> p0s(num_missiles);
+    // std::vector<Point2D> p1s(num_missiles);
+    // std::vector<Point2D> p2s(num_missiles);
+    // std::vector<Point2D> p3s(num_missiles);
     
     for (int i = 0; i < num_missiles; i++) {
         // 每个弹有3个优化变量: 角度、d0、d3
@@ -52,6 +56,24 @@ double multi_missile_objective_function(const std::vector<double> &x, std::vecto
         total_error += std::pow(arrival_time - opt_data->target_arrival_time, 2);
     }
     
+    // // 检查所有弹道对之间的交叉情况
+    // double max_violation = -std::numeric_limits<double>::max();
+    // double sum_violation = 0;
+    // double safety_distance = 500.0;  // 最小安全距离，根据实际需要调整
+    
+    // for (int i = 0; i < num_missiles - 1; i++) {
+    //     for (int j = i + 1; j < num_missiles; j++) {
+    //         double intersection = checkBezierIntersectionEfficient(
+    //             p0s[i], p1s[i], p2s[i], p3s[i],
+    //             p0s[j], p1s[j], p2s[j], p3s[j],
+    //             safety_distance
+    //         );
+
+    //         max_violation = std::max(max_violation, intersection);
+    //         sum_violation += intersection;
+    //     }
+    // }
+    // total_error += sum_violation;
     return total_error;
 }
     
@@ -127,16 +149,13 @@ optimizeMultiMissilePaths(
         double total_time = 0.0;
         
         double max_distance = 0;
+        
         for (const auto& missile : missiles) {
             double dx = target_point[0] - missile.start_point[0];
             double dy = target_point[1] - missile.start_point[1];
             double direct_distance = std::sqrt(dx*dx + dy*dy);
             
-            if (direct_distance > max_distance) {
-                max_distance = direct_distance;
-            }
-            // total_time += (direct_distance * 1.3) / missile.speed;
-            total_time += (max_distance * 1.0 - radius + 100) / missile.speed;
+            total_time += (direct_distance * 1.0 - radius + 1500) / missile.speed;
         }
         
         // 取平均值作为目标时间
@@ -183,7 +202,7 @@ optimizeMultiMissilePaths(
     // optimizer.add_inequality_constraint(multi_missile_intersection_constraint, &opt_data, 1e-8);
     
     optimizer.set_xtol_rel(1e-4);
-    optimizer.set_maxeval(1000);
+    optimizer.set_maxeval(2000);
     
     // 设置初始猜测值
     std::vector<double> x(num_missiles * 3);
@@ -214,6 +233,69 @@ optimizeMultiMissilePaths(
         std::cerr << "优化过程中出错: " << e.what() << std::endl;
     }
     
+    auto get_violation = [] (const std::vector<bezier::BezierData> &missiles, std::vector<double> &x, 
+        const Point2D &target_point, double radius) {
+        int num_missiles = missiles.size();
+        
+        // 如果只有一条弹道，不存在交叉问题
+        if (num_missiles <= 1) return -1.0;
+        
+        // 计算所有弹道的控制点
+        std::vector<Point2D> p0s(num_missiles);
+        std::vector<Point2D> p1s(num_missiles);
+        std::vector<Point2D> p2s(num_missiles);
+        std::vector<Point2D> p3s(num_missiles);
+        
+        for (int i = 0; i < num_missiles; i++) {
+            int base_idx = i * 3;
+            double angle = x[base_idx];
+            double d0 = x[base_idx + 1];
+            double d3 = x[base_idx + 2];
+            
+            const BezierData& missile = missiles[i];
+            
+            p0s[i] = missile.start_point;
+            
+            p3s[i] = {
+                target_point.at(0) + radius * std::cos(angle),
+                target_point.at(1) + radius * std::sin(angle)
+            };
+            
+            p1s[i] = {
+                p0s[i][0] + d0 * std::cos(missile.theta0),
+                p0s[i][1] + d0 * std::sin(missile.theta0)
+            };
+            
+            p2s[i] = {
+                p3s[i][0] + d3 * std::cos(angle),
+                p3s[i][1] + d3 * std::sin(angle)
+            };
+        }
+        
+        // 检查所有弹道对之间的交叉情况
+        double max_violation = -std::numeric_limits<double>::max();
+        double sum_violation = 0;
+        double safety_distance = 500.0;  // 最小安全距离，根据实际需要调整
+        
+        for (int i = 0; i < num_missiles - 1; i++) {
+            for (int j = i + 1; j < num_missiles; j++) {
+                double intersection = checkBezierIntersectionEfficient(
+                    p0s[i], p1s[i], p2s[i], p3s[i],
+                    p0s[j], p1s[j], p2s[j], p3s[j],
+                    safety_distance
+                );
+
+                max_violation = std::max(max_violation, intersection);
+                sum_violation += intersection;
+            }
+        }
+        
+        // return sum_violation;
+        return max_violation;
+    };
+
+    // std::cout << "优化完violation: " << get_violation(missiles, x, target_point, radius) << std::endl;
+
     // 计算最优解对应的控制点和路径
     std::vector<std::tuple<Point2D, Point2D, Point2D, Point2D>> paths;
     
@@ -327,7 +409,7 @@ bool loadMissileDataFromFile(
             iss >> missile.start_point[0] >> missile.start_point[1] 
                 >> missile.theta0;
             
-            missile.speed = 236;
+            missile.speed = 252;
             
             // 设置最小转弯半径(使用全局值)
             missile.r_min = rad_min;

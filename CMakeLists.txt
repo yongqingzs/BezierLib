@@ -19,12 +19,14 @@ include_directories(include)
 set(LIB_SOURCES
     src/bezier_functions.cpp
     src/bezier_swarm.cpp
+    src/non_intersection.cpp
 )
 
 set(SOURCES
     src/bezier_demo.cpp
     src/bezier_functions.cpp
     src/bezier_swarm.cpp
+    src/non_intersection.cpp
 )
 
 # 添加共享库
@@ -39,9 +41,7 @@ set_target_properties(bezier PROPERTIES
 
 # 导出符号
 target_compile_definitions(bezier PRIVATE BEZIER_EXPORTS)
-
 target_link_libraries(bezier PRIVATE ${NLOPT_LIBRARIES})
-
 
 add_executable(bezier_demo ${SOURCES})
 target_link_libraries(bezier_demo ${NLOPT_LIBRARIES})
@@ -49,3 +49,9 @@ target_link_libraries(bezier_demo ${NLOPT_LIBRARIES})
 # 添加示例程序（通过链接库）
 # add_executable(bezier_demo_so src/bezier_demo.cpp)
 # target_link_libraries(bezier_demo_so PRIVATE bezier)
+
+# add_executable(intersection_test test/test_intersection.cpp src/non_intersection.cpp)
+# target_link_libraries(intersection_test ${NLOPT_LIBRARIES})
+
+add_executable(intersection1 test/intersection1.cpp src/non_intersection.cpp)
+target_link_libraries(intersection1 ${NLOPT_LIBRARIES})

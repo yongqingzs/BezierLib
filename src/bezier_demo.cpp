@@ -1,9 +1,6 @@
 // #include "bezier_api.hpp"
 #include "bezier.hpp"
-#include <iostream>
-#include <string>
 #include <chrono>
-#include <cmath>
 
 using namespace std;
 using namespace bezier;

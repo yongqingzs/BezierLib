@@ -34,13 +34,6 @@ struct MultiMissileOptData {
 
 const char* nloptResultToString(nlopt::result result);
 
-double checkBezierCurvesIntersection(
-    const Point2D& p0_1, const Point2D& p1_1, const Point2D& p2_1, const Point2D& p3_1,
-    const Point2D& p0_2, const Point2D& p1_2, const Point2D& p2_2, const Point2D& p3_2,
-    int num_samples = 50);
-
-double multi_missile_intersection_constraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
-
 bool loadMissileDataFromFile(
     const std::string& filename, 
     std::vector<bezier::BezierData>& missiles,
@@ -48,6 +41,39 @@ bool loadMissileDataFromFile(
     double& radius,
     double& target_length,
     double& rad_min);
+
+// 航迹交叉检测
+bool doSegmentsIntersect(const Point2D& p1, const Point2D& p2, const Point2D& q1, const Point2D& q2);
+
+double checkBezierIntersectionEfficient(
+    const Point2D& p0_1, const Point2D& p1_1, const Point2D& p2_1, const Point2D& p3_1,
+    const Point2D& p0_2, const Point2D& p1_2, const Point2D& p2_2, const Point2D& p3_2,
+    double safety_distance);
+
+double bezierCurveSubdivisionCheck(
+    const Point2D& p0_1, const Point2D& p1_1, const Point2D& p2_1, const Point2D& p3_1,
+    const Point2D& p0_2, const Point2D& p1_2, const Point2D& p2_2, const Point2D& p3_2,
+    double safety_distance,
+    int depth, int max_depth);
+
+bool isBezierCurveFlat(
+    const Point2D& p0, const Point2D& p1, const Point2D& p2, const Point2D& p3,
+    double tolerance);
+
+double checkSegmentDistance(
+    const Point2D& p0, const Point2D& p1,
+    const Point2D& q0, const Point2D& q1,
+    double safety_distance);
+
+double checkBezierIntersectionBySampling(
+    const Point2D& p0_1, const Point2D& p1_1, const Point2D& p2_1, const Point2D& p3_1,
+    const Point2D& p0_2, const Point2D& p1_2, const Point2D& p2_2, const Point2D& p3_2,
+    double safety_distance, int num_samples = 10);
+
+double multi_missile_intersection_constraint(
+    const std::vector<double> &x, 
+    std::vector<double> &grad, 
+    void *data);
 }
 
 #endif
