@@ -19,14 +19,12 @@ include_directories(include)
 set(LIB_SOURCES
     src/bezier_functions.cpp
     src/bezier_swarm.cpp
-    src/non_intersection.cpp
 )
 
 set(SOURCES
     src/bezier_demo.cpp
     src/bezier_functions.cpp
     src/bezier_swarm.cpp
-    src/non_intersection.cpp
 )
 
 # 添加共享库
@@ -52,6 +50,3 @@ target_link_libraries(bezier_demo ${NLOPT_LIBRARIES})
 
 # add_executable(intersection_test test/test_intersection.cpp src/non_intersection.cpp)
 # target_link_libraries(intersection_test ${NLOPT_LIBRARIES})
-
-add_executable(intersection1 test/intersection1.cpp src/non_intersection.cpp)
-target_link_libraries(intersection1 ${NLOPT_LIBRARIES})

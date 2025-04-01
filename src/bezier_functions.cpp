@@ -445,7 +445,7 @@ const char* nloptResultToString(nlopt::result result) {
  * @param r_min 最小转弯半径
  * @return std::tuple<Matrix, Matrix, Matrix> 控制点和终点
  */
-std::tuple<Point2D, Point2D, Point2D> findNLoptParameters_Circle(
+std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
     const Point2D& p0,
     const Point2D& target_point,
     double radius,
@@ -532,7 +532,7 @@ std::tuple<Point2D, Point2D, Point2D> findNLoptParameters_Circle(
         best_p3[1] + best_d3 * std::sin(best_angle)
     };
     
-    return std::make_tuple(p1, p2, best_p3);
+    return std::make_tuple(p1, p2, best_p3, min_error);
 }
 
 } // namespace bezier

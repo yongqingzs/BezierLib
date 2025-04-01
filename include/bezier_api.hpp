@@ -72,7 +72,7 @@ namespace bezier {
         int num_samples = 100
     );
     
-    BEZIER_API std::tuple<Point2D, Point2D, Point2D> findNLoptParameters_Circle(
+    BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
         const Point2D& p0,
         const Point2D& target_point,
         double radius,
@@ -82,12 +82,16 @@ namespace bezier {
         int algorithm = nlopt::LN_COBYLA
     );
 
-    BEZIER_API std::vector<std::tuple<Point2D, Point2D, Point2D, Point2D>> 
-    optimizeMultiMissilePaths(
-        const std::vector<BezierData>& missiles,
-        const Point2D& target_point,
-        double radius,
-        double target_arrival_time = 0.0);
+    BEZIER_API double optimize_target_length(
+        const std::vector<bezier::Point2D>& input_XYZ,
+        const bezier::Point2D& target_point,
+        double target_radius,
+        const std::vector<double>& headings,
+        double r_min,
+        double min_target_length,
+        double max_target_length,
+        double initial_target_length
+    );
 }
 
 #endif // BEZIER_API_HPP
