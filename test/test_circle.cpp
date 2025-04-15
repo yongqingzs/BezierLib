@@ -46,11 +46,11 @@ int main() {
     std::cout << "误差:        " << error << "\n";
     
     // 计算和输出贝塞尔曲线长度和最大曲率
-    double curve_length = bezier::calculateBezierLength(p0, p1, p2, p3, 500);
-    double max_curvature = bezier::findMaxCurvature(p0, p1, p2, p3, 0.01);
+    // double curve_length = bezier::calculateBezierLength(p0, p1, p2, p3, 500);
+    // double max_curvature = bezier::findMaxCurvature(p0, p1, p2, p3, 0.01);
     
-    std::cout << "曲线长度:    " << curve_length << " (目标: " << target_length << ")\n";
-    std::cout << "最大曲率:    " << max_curvature << " (最小转弯半径: " << 1.0/max_curvature << ")\n";
+    // std::cout << "曲线长度:    " << curve_length << " (目标: " << target_length << ")\n";
+    // std::cout << "最大曲率:    " << max_curvature << " (最小转弯半径: " << 1.0/max_curvature << ")\n";
     
     // 输出贝塞尔曲线点到文件，方便可视化
     bezier::outputBezierCurvePoints(

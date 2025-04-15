@@ -4,7 +4,7 @@ namespace bezier {
 
 /** 基于控制点计算贝塞尔曲线长度
  */
-BEZIER_API double calculateBezierLength(
+double calculateBezierLength(
     const Point2D& p0, 
     const Point2D& p1,
     const Point2D& p2, 
@@ -41,7 +41,7 @@ BEZIER_API double calculateBezierLength(
 
 /** 计算贝塞尔曲线上某点的曲率（根据t找点）
  */
-BEZIER_API double calculateCurvatureAtPoint(
+double calculateCurvatureAtPoint(
     double t, 
     const Point2D& p0, 
     const Point2D& p1,
@@ -89,7 +89,7 @@ BEZIER_API double calculateCurvatureAtPoint(
 
 /** 寻找贝塞尔曲线的最大曲率
  */
-BEZIER_API double findMaxCurvature(
+double findMaxCurvature(
     const Point2D& p0, 
     const Point2D& p1,
     const Point2D& p2, 
@@ -124,7 +124,7 @@ BEZIER_API double findMaxCurvature(
  * @param r_min 最小转弯半径
  * @return std::tuple<Matrix, double, double, double> 最优终点和控制点参数
  */
-BEZIER_API std::tuple<Point2D, Point2D, Point2D> findOptimalParameters_Circle(
+std::tuple<Point2D, Point2D, Point2D> findOptimalParameters_Circle(
     const Point2D& p0,
     const Point2D& target_point,
     double radius,

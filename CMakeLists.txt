@@ -38,8 +38,9 @@ include_directories(include ${NLOPT_INCLUDE_DIRS})
 
 # 定义库的源文件
 set(LIB_SOURCES
-    src/bezier_functions.cpp
+    src/bezier_circle.cpp
     src/bezier_fixed.cpp
+    src/bezier_quintic_fixed.cpp
     src/bezier_swarm.cpp
 )
 
@@ -64,9 +65,12 @@ target_compile_definitions(bezier PRIVATE BEZIER_EXPORTS)
 target_link_libraries(bezier PRIVATE ${NLOPT_LIBRARIES})
 
 if(MSVC)
-  add_executable(test_circle test/test_circle.cpp)
+  # add_executable(test_circle test/test_circle.cpp)
   # target_link_libraries(test_circle ${NLOPT_LIBRARIES} $<TARGET_FILE:bezier>)
-  target_link_libraries(test_circle ${NLOPT_LIBRARIES} bezier)
+  # target_link_libraries(test_circle ${NLOPT_LIBRARIES} bezier)
+
+  add_executable(test_quintic test/test_quintic.cpp)
+  target_link_libraries(test_quintic ${NLOPT_LIBRARIES} bezier)
 endif()
 
 # 复制DLL到输出目录（如果在MSVC上运行）

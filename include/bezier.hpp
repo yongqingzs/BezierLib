@@ -34,6 +34,30 @@ struct OverallOptData {
     double r_min;                                   // 最小转弯半径
 };
 
+double calculateBezierLength(
+    const Point2D& p0, 
+    const Point2D& p1, 
+    const Point2D& p2, 
+    const Point2D& p3, 
+    int num_samples = 100
+);
+
+double calculateCurvatureAtPoint(
+    double t,
+    const Point2D& p0, 
+    const Point2D& p1, 
+    const Point2D& p2, 
+    const Point2D& p3
+);
+
+double findMaxCurvature(
+    const Point2D& p0, 
+    const Point2D& p1, 
+    const Point2D& p2, 
+    const Point2D& p3, 
+    double dt = 0.01
+);
+
 const char* nloptResultToString(nlopt::result result);
 
 }

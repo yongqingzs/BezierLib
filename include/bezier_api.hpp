@@ -28,50 +28,6 @@ namespace bezier {
         double r_min;         // 最小转弯半径
     };
     
-    BEZIER_API double calculateBezierLength(
-        const Point2D& p0, 
-        const Point2D& p1, 
-        const Point2D& p2, 
-        const Point2D& p3, 
-        int num_samples = 100
-    );
-
-    BEZIER_API double calculateCurvatureAtPoint(
-        double t,
-        const Point2D& p0, 
-        const Point2D& p1, 
-        const Point2D& p2, 
-        const Point2D& p3
-    );
-    
-    BEZIER_API double findMaxCurvature(
-        const Point2D& p0, 
-        const Point2D& p1, 
-        const Point2D& p2, 
-        const Point2D& p3, 
-        double dt = 0.01
-    );
-    
-    BEZIER_API std::tuple<Point2D, Point2D, Point2D> findOptimalParameters_Circle(
-        const Point2D& p0,
-        const Point2D& target_point,
-        double radius,
-        double theta0,
-        double target_length,
-        double r_min
-    );
-    
-    BEZIER_API bool outputBezierCurvePoints(
-        const Point2D& p0, 
-        const Point2D& p1, 
-        const Point2D& p2, 
-        const Point2D& p3,
-        const Point2D& target_point, 
-        double radius,
-        const std::string& filename,
-        int num_samples = 100
-    );
-    
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
         const Point2D& p0,
         const Point2D& target_point,
@@ -82,15 +38,15 @@ namespace bezier {
         int algorithm = nlopt::LN_COBYLA
     );
 
-    BEZIER_API double optimize_target_length(
-        const std::vector<bezier::Point2D>& input_XYZ,
-        const bezier::Point2D& target_point,
-        double target_radius,
-        const std::vector<double>& headings,
-        double r_min,
-        double min_target_length,
-        double max_target_length,
-        double initial_target_length
+    BEZIER_API bool outputBezierCurvePoints(
+        const Point2D& p0, 
+        const Point2D& p1, 
+        const Point2D& p2, 
+        const Point2D& p3,
+        const Point2D& target_point, 
+        double radius,
+        const std::string& filename,
+        int num_samples = 100
     );
 
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_FixedAngle(
@@ -102,6 +58,39 @@ namespace bezier {
         double r_min,
         double fixed_angle,
         int algorithm = nlopt::LN_COBYLA
+    );
+
+    BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findNLoptParameters_QuinticFixed(
+        const Point2D& p0,
+        const Point2D& target_point,
+        double radius,
+        double theta0,
+        double target_length,
+        double r_min,
+        double fixed_angle,
+        int algorithm = nlopt::LN_COBYLA);
+
+    BEZIER_API bool outputQuinticBezierPoints(
+        const Point2D& p0, 
+        const Point2D& p1,
+        const Point2D& p2, 
+        const Point2D& p3,
+        const Point2D& p4,
+        const Point2D& p5,
+        const Point2D& target_point, 
+        double r,
+        const std::string& filename,
+        int num_samples = 100);
+
+    BEZIER_API double optimize_target_length(
+        const std::vector<bezier::Point2D>& input_XYZ,
+        const bezier::Point2D& target_point,
+        double target_radius,
+        const std::vector<double>& headings,
+        double r_min,
+        double min_target_length,
+        double max_target_length,
+        double initial_target_length
     );
 }
 
