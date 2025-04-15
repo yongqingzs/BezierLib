@@ -92,6 +92,17 @@ namespace bezier {
         double max_target_length,
         double initial_target_length
     );
+
+    BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_FixedAngle(
+        const Point2D& p0,
+        const Point2D& target_point,
+        double radius,
+        double theta0,
+        double target_length,
+        double r_min,
+        double fixed_angle,
+        int algorithm = nlopt::LN_COBYLA
+    );
 }
 
 #endif // BEZIER_API_HPP

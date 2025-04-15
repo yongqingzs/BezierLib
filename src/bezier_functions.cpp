@@ -4,7 +4,7 @@ namespace bezier {
 
 /** 基于控制点计算贝塞尔曲线长度
  */
-double calculateBezierLength(
+BEZIER_API double calculateBezierLength(
     const Point2D& p0, 
     const Point2D& p1,
     const Point2D& p2, 
@@ -41,7 +41,7 @@ double calculateBezierLength(
 
 /** 计算贝塞尔曲线上某点的曲率（根据t找点）
  */
-double calculateCurvatureAtPoint(
+BEZIER_API double calculateCurvatureAtPoint(
     double t, 
     const Point2D& p0, 
     const Point2D& p1,
@@ -89,7 +89,7 @@ double calculateCurvatureAtPoint(
 
 /** 寻找贝塞尔曲线的最大曲率
  */
-double findMaxCurvature(
+BEZIER_API double findMaxCurvature(
     const Point2D& p0, 
     const Point2D& p1,
     const Point2D& p2, 
@@ -124,7 +124,7 @@ double findMaxCurvature(
  * @param r_min 最小转弯半径
  * @return std::tuple<Matrix, double, double, double> 最优终点和控制点参数
  */
-std::tuple<Point2D, Point2D, Point2D> findOptimalParameters_Circle(
+BEZIER_API std::tuple<Point2D, Point2D, Point2D> findOptimalParameters_Circle(
     const Point2D& p0,
     const Point2D& target_point,
     double radius,
@@ -257,10 +257,11 @@ std::tuple<Point2D, Point2D, Point2D> findOptimalParameters_Circle(
         best_p3[1] + best_d3 * std::sin(best_angle)
     };
 
-    std::cout << "最终结果: 终点角度 = " << best_angle * 180 / PI << "度, "
-              << "终点坐标 = (" << best_p3[0] << ", " << best_p3[1] << "), "
-              << "d0 = " << best_d0 << ", d3 = " << best_d3 
-              << ", 误差 = " << min_error << std::endl;
+    // std::cout << "最终结果: 终点角度 = " << best_angle * 180 / PI << "度, "
+    //           << "终点坐标 = (" << best_p3[0] << ", " << best_p3[1] << "), "
+    //           << "d0 = " << best_d0 << ", d3 = " << best_d3 
+    //           << ", 误差 = " << min_error << std::endl;
+    std::cout << "min_error = " << min_error << std::endl;
     
     return std::make_tuple(p1, p2, best_p3);
 }
@@ -278,7 +279,7 @@ std::tuple<Point2D, Point2D, Point2D> findOptimalParameters_Circle(
  * @param num_samples 采样点数量
  * @return bool 是否成功输出
  */
-bool outputBezierCurvePoints(
+BEZIER_API bool outputBezierCurvePoints(
     const Point2D& p0, 
     const Point2D& p1,
     const Point2D& p2, 
@@ -445,7 +446,7 @@ const char* nloptResultToString(nlopt::result result) {
  * @param r_min 最小转弯半径
  * @return std::tuple<Matrix, Matrix, Matrix> 控制点和终点
  */
-std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
+BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
     const Point2D& p0,
     const Point2D& target_point,
     double radius,

@@ -22,6 +22,7 @@ struct OptData {
     double theta0;
     double target_length;
     double r_min;
+    double fixed_angle;  // 固定角度
 };
 
 // 多弹优化问题的数据结构

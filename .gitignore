@@ -2,5 +2,6 @@ build/
 build_win/
 tmp/
 .vscode/
+.vs/
 output/
 data/

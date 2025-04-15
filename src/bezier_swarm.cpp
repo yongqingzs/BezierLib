@@ -31,7 +31,7 @@ double overall_objective_function(const std::vector<double>& x, std::vector<doub
     OverallOptData* opt_data = static_cast<OverallOptData*>(data);
     double target_length = x[0]; // 单一的 target_length 值
     double total_error = 0.0;
-    int n = opt_data->input_XYZ->size();
+    int n = int(opt_data->input_XYZ->size());
 
     std::vector<std::vector<Point2D>> trajectories; // 存储所有轨迹的采样点
     // 对每个个体计算误差并累加
@@ -68,7 +68,7 @@ double overall_objective_function(const std::vector<double>& x, std::vector<doub
 }
 
 // 优化函数，返回单一的最优 target_length
-double optimize_target_length(
+BEZIER_API double optimize_target_length(
     const std::vector<bezier::Point2D>& input_XYZ,
     const bezier::Point2D& target_point,
     double target_radius,
@@ -108,45 +108,12 @@ double optimize_target_length(
     nlopt::result result = optimizer.optimize(x, min_error);
 
     double optimal_target_length = x[0];
-    std::cout << "全局最优 target_length = " << optimal_target_length
-        << ", 最小整体误差 = " << min_error << std::endl;
+    
+    // std::cout << "全局最优 target_length = " << optimal_target_length
+    //     << ", 最小整体误差 = " << min_error << std::endl;
+    std::cout << "min_error = " << min_error << std::endl;
 
     return optimal_target_length;
 }
 
-// 示例调用
-void run_optimization() {
-    // 示例输入数据
-    std::vector<bezier::Point2D> input_XYZ = { /* 您的输入点 */ };
-    bezier::Point2D target_point = { /* 目标点坐标 */ };
-    double target_radius = 10.0;
-    std::vector<double> headings = { /* 航向角列表 */ };
-    double r_min = 5.0;
-    double min_target_length = 10.0;
-    double max_target_length = 50.0;
-    double initial_target_length = 20.0;
-
-    // 获取全局最优的 target_length
-    double optimal_target_length = optimize_target_length(
-        input_XYZ, target_point, target_radius, headings, r_min,
-        min_target_length, max_target_length, initial_target_length
-    );
-
-    // 使用最优值计算所有个体的控制点和终点
-    for (int i = 0; i < input_XYZ.size(); ++i) {
-        auto optimal_parameters = bezier::findNLoptParameters_Circle(
-            input_XYZ[i], target_point, target_radius,
-            PI - (headings[i] + 90) * PI / 180.0,
-            optimal_target_length, r_min, 1
-        );
-        bezier::Point2D p1 = std::get<0>(optimal_parameters);
-        bezier::Point2D p2 = std::get<1>(optimal_parameters);
-        bezier::Point2D p3 = std::get<2>(optimal_parameters);
-        double min_error = std::get<3>(optimal_parameters);
-
-        std::cout << "个体 " << i << ": p1 = (" << p1[0] << ", " << p1[1] << "), "
-            << "p2 = (" << p2[0] << ", " << p2[1] << "), "
-            << "p3 = (" << p3[0] << ", " << p3[1] << "), 误差 = " << min_error << std::endl;
-    }
-}
 }
