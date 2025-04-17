@@ -536,4 +536,50 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Cir
     return std::make_tuple(p1, p2, best_p3, min_error);
 }
 
+BEZIER_API std::vector<std::array<double, 4>> getBezierCurvePoints(
+	const Point2D& p0,
+	const Point2D& p1,
+	const Point2D& p2,
+	const Point2D& p3,
+	const Point2D& target_point, 
+    double r,
+	int num_samples)
+{
+	std::vector<std::array<double, 4>> output_;
+	output_.reserve(num_samples);
+	double dt = 1.0 / (num_samples - 1);
+
+	// 计算并输出采样点
+	for (int i = 0; i < num_samples; i++) {
+		double t = i * dt;
+
+		// 贝塞尔公式系数
+		double B0 = pow(1 - t, 3);
+		double B1 = 3 * t * pow(1 - t, 2);
+		double B2 = 3 * t * t * (1 - t);
+		double B3 = pow(t, 3);
+
+		// 计算点坐标
+		double x = B0 * p0[0] + B1 * p1[0] + B2 * p2[0] + B3 * p3[0];
+		double y = B0 * p0[1] + B1 * p1[1] + B2 * p2[1] + B3 * p3[1];
+
+		// 计算一阶导数
+		double x_prime = 3 * pow(1 - t, 2) * (p1[0] - p0[0]) +
+			6 * (1 - t) * t * (p2[0] - p1[0]) +
+			3 * t * t * (p3[0] - p2[0]);
+		double y_prime = 3 * pow(1 - t, 2) * (p1[1] - p0[1]) +
+			6 * (1 - t) * t * (p2[1] - p1[1]) +
+			3 * t * t * (p3[1] - p2[1]);
+
+		// 计算朝向角度（以北向为0度，顺时针）
+		double angle_rad = atan2(x_prime, y_prime);
+		if (angle_rad < 0) angle_rad += 2 * PI;
+		double heading = angle_rad * (180.0 / PI);
+
+		output_.push_back({ x, y, 0, heading });
+	}
+
+	return output_;
+}
+
 } // namespace bezier

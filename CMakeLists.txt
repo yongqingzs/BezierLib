@@ -65,9 +65,9 @@ target_compile_definitions(bezier PRIVATE BEZIER_EXPORTS)
 target_link_libraries(bezier PRIVATE ${NLOPT_LIBRARIES})
 
 if(MSVC)
-  # add_executable(test_circle test/test_circle.cpp)
+  add_executable(test_circle test/test_circle.cpp)
   # target_link_libraries(test_circle ${NLOPT_LIBRARIES} $<TARGET_FILE:bezier>)
-  # target_link_libraries(test_circle ${NLOPT_LIBRARIES} bezier)
+  target_link_libraries(test_circle ${NLOPT_LIBRARIES} bezier)
 
   add_executable(test_quintic test/test_quintic.cpp)
   target_link_libraries(test_quintic ${NLOPT_LIBRARIES} bezier)

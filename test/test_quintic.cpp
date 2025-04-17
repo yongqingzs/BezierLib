@@ -35,9 +35,25 @@ int main() {
     std::cout << "\n开始优化..." << std::endl;
     
     // 调用优化函数
+    std::vector<double> lower_bounds(6);
+    std::vector<double> upper_bounds(6);
+    lower_bounds[0] = 10.0;
+    lower_bounds[1] = 10.0;
+    upper_bounds[0] = target_length;
+    upper_bounds[1] = target_length;
+    lower_bounds[2] = 0.1;
+    lower_bounds[3] = 0.1;
+    upper_bounds[2] = 0.9;
+    upper_bounds[3] = 0.9;
+    double max_offset = target_length * 4;
+    lower_bounds[4] = -max_offset;
+    lower_bounds[5] = -max_offset;
+    upper_bounds[4] = max_offset;
+    upper_bounds[5] = max_offset;
+
     auto result = findNLoptParameters_QuinticFixed(
         start_point, target_point, radius, start_angle, 
-        target_length, min_radius, end_angle);
+        target_length, min_radius, end_angle, lower_bounds, upper_bounds);
     
     // 提取结果
     Point2D p1 = std::get<0>(result);

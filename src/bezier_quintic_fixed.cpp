@@ -226,6 +226,8 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findN
     double target_length,
     double r_min,
     double fixed_angle,
+    const std::vector<double>& lower_bounds,  // 默认为空向量
+    const std::vector<double>& upper_bounds,  // 默认为空向量
     int algorithm)
 {
     // 选择算法
@@ -249,30 +251,35 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findN
     nlopt::opt optimizer(algo, 6);  // 现在有6个优化参数：a, b, s, t, c, d
 
     // 设置参数边界
-    std::vector<double> lower_bounds(6);
-    std::vector<double> upper_bounds(6);
+    std::vector<double> lower_bounds_actual(6);
+    std::vector<double> upper_bounds_actual(6);
+    if (lower_bounds.size() == 6 && upper_bounds.size() == 6) {
+        lower_bounds_actual = lower_bounds;
+        upper_bounds_actual = upper_bounds;
+    } else {
+        // 默认边界设置
+        // a, b 参数（控制点距离）
+        lower_bounds_actual[0] = 10.0;
+        lower_bounds_actual[1] = 10.0;
+        upper_bounds_actual[0] = target_length;
+        upper_bounds_actual[1] = target_length;
+        
+        // s, t 参数（插值比例，范围是0到1）
+        lower_bounds_actual[2] = 0.1;
+        lower_bounds_actual[3] = 0.1;
+        upper_bounds_actual[2] = 0.9;
+        upper_bounds_actual[3] = 0.9;
+        
+        // c, d 参数（法向偏移）
+        double max_offset = target_length * 5;
+        lower_bounds_actual[4] = -max_offset;
+        lower_bounds_actual[5] = -max_offset;
+        upper_bounds_actual[4] = max_offset;
+        upper_bounds_actual[5] = max_offset;
+    }
 
-    // a, b 参数（控制点距离）
-    lower_bounds[0] = 10.0;
-    lower_bounds[1] = 10.0;
-    upper_bounds[0] = target_length;
-    upper_bounds[1] = target_length;
-    
-    // s, t 参数（插值比例，范围是0到1）
-    lower_bounds[2] = 0.1;
-    lower_bounds[3] = 0.1;
-    upper_bounds[2] = 0.9;
-    upper_bounds[3] = 0.9;
-    
-    // c, d 参数（法向偏移）
-    double max_offset = target_length * 5;
-    lower_bounds[4] = -max_offset;
-    lower_bounds[5] = -max_offset;
-    upper_bounds[4] = max_offset;
-    upper_bounds[5] = max_offset;
-
-    optimizer.set_lower_bounds(lower_bounds);
-    optimizer.set_upper_bounds(upper_bounds);
+    optimizer.set_lower_bounds(lower_bounds_actual);
+    optimizer.set_upper_bounds(upper_bounds_actual);
 
     optimizer.set_min_objective(objective_function_quintic, &opt_data);
     optimizer.add_inequality_constraint(constraint_function_quintic, &opt_data, 1e-8);
@@ -414,6 +421,62 @@ BEZIER_API bool outputQuinticBezierPoints(
     }
 
     return true;
+}
+
+BEZIER_API std::vector<std::array<double, 4>> getQuinticBezierPoints(
+    const bezier::Point2D& p0,
+    const bezier::Point2D& p1,
+    const bezier::Point2D& p2,
+    const bezier::Point2D& p3,
+    const bezier::Point2D& p4,
+    const bezier::Point2D& p5,
+    const bezier::Point2D& target_point, 
+    double r,
+    int num_samples)
+{
+    std::vector<std::array<double, 4>> output_;
+    output_.reserve(num_samples);
+    double dt = 1.0 / (num_samples - 1);
+
+    // 计算并输出采样点
+    for (int i = 0; i < num_samples; i++) {
+        double t = i * dt;
+
+        // 五阶贝塞尔公式系数
+        double t1 = 1.0 - t;
+        double B0 = t1*t1*t1*t1*t1;
+        double B1 = 5*t1*t1*t1*t1*t;
+        double B2 = 10*t1*t1*t1*t*t;
+        double B3 = 10*t1*t1*t*t*t;
+        double B4 = 5*t1*t*t*t*t;
+        double B5 = t*t*t*t*t;
+
+        // 计算点坐标
+        double x = B0*p0[0] + B1*p1[0] + B2*p2[0] + B3*p3[0] + B4*p4[0] + B5*p5[0];
+        double y = B0*p0[1] + B1*p1[1] + B2*p2[1] + B3*p3[1] + B4*p4[1] + B5*p5[1];
+
+        // 计算一阶导数（速度向量）
+        // 五阶贝塞尔曲线一阶导数系数
+        double dB0 = -5*t1*t1*t1*t1;
+        double dB1 = 5*t1*t1*t1*t1 - 20*t1*t1*t1*t;
+        double dB2 = 20*t1*t1*t1*t - 30*t1*t1*t*t;
+        double dB3 = 30*t1*t1*t*t - 20*t1*t*t*t;
+        double dB4 = 20*t1*t*t*t - 5*t*t*t*t;
+        double dB5 = 5*t*t*t*t;
+        
+        double x_prime = dB0*p0[0] + dB1*p1[0] + dB2*p2[0] + dB3*p3[0] + dB4*p4[0] + dB5*p5[0];
+        double y_prime = dB0*p0[1] + dB1*p1[1] + dB2*p2[1] + dB3*p3[1] + dB4*p4[1] + dB5*p5[1];
+
+        // 计算朝向角度（以北向为0度，顺时针）
+        double angle_rad = atan2(x_prime, y_prime);
+        if (angle_rad < 0) angle_rad += 2 * PI;
+        double heading = angle_rad * (180.0 / PI);
+
+        // 将点坐标、高度(默认为0)和航向角添加到输出向量
+        output_.push_back({ x, y, 0, heading });
+    }
+
+    return output_;
 }
 
 } // namespace bezier

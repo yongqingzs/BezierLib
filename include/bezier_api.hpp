@@ -38,17 +38,6 @@ namespace bezier {
         int algorithm = nlopt::LN_COBYLA
     );
 
-    BEZIER_API bool outputBezierCurvePoints(
-        const Point2D& p0, 
-        const Point2D& p1, 
-        const Point2D& p2, 
-        const Point2D& p3,
-        const Point2D& target_point, 
-        double radius,
-        const std::string& filename,
-        int num_samples = 100
-    );
-
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_FixedAngle(
         const Point2D& p0,
         const Point2D& target_point,
@@ -68,8 +57,22 @@ namespace bezier {
         double target_length,
         double r_min,
         double fixed_angle,
-        int algorithm = nlopt::LN_COBYLA);
+        const std::vector<double>& lower_bounds = {},
+        const std::vector<double>& upper_bounds = {},
+        int algorithm = nlopt::LN_COBYLA
+    );
 
+    BEZIER_API bool outputBezierCurvePoints(
+        const Point2D& p0, 
+        const Point2D& p1, 
+        const Point2D& p2, 
+        const Point2D& p3,
+        const Point2D& target_point, 
+        double radius,
+        const std::string& filename,
+        int num_samples = 100
+    );
+    
     BEZIER_API bool outputQuinticBezierPoints(
         const Point2D& p0, 
         const Point2D& p1,
@@ -80,7 +83,30 @@ namespace bezier {
         const Point2D& target_point, 
         double r,
         const std::string& filename,
-        int num_samples = 100);
+        int num_samples = 100
+    );
+
+    BEZIER_API std::vector<std::array<double, 4>> getBezierCurvePoints(
+        const Point2D& p0, 
+        const Point2D& p1, 
+        const Point2D& p2, 
+        const Point2D& p3,
+        const Point2D& target_point, 
+        double radius,
+        int num_samples = 100
+    );
+
+    BEZIER_API std::vector<std::array<double, 4>> getQuinticBezierPoints(
+        const Point2D& p0, 
+        const Point2D& p1,
+        const Point2D& p2, 
+        const Point2D& p3,
+        const Point2D& p4,
+        const Point2D& p5,
+        const Point2D& target_point, 
+        double radius,
+        int num_samples = 100
+    );
 
     BEZIER_API double optimize_target_length(
         const std::vector<bezier::Point2D>& input_XYZ,
