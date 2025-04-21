@@ -7,10 +7,10 @@ struct LayerData {
     const Point2D* target_point;
     double target_radius;
     int nodes_num;
-    int algorithm;
-    const std::vector<double>* lower_bounds;
-    const std::vector<double>* upper_bounds;
-    const std::vector<double>* x_init;
+    nlopt::algorithm algo_first;
+    const std::vector<double>* lower_bounds_first;
+    const std::vector<double>* upper_bounds_first;
+    const std::vector<double>* x_init_first;
     int opt_type;
 };
 
@@ -40,10 +40,10 @@ double second_layer_objective(unsigned n, const double *x, double *grad, void *d
                     x[0],  // target_length 
                     r_min, 
                     x[1],  // fixed_angle
-                    *user_data->lower_bounds, 
-                    *user_data->upper_bounds, 
-                    *user_data->x_init,
-                    user_data->algorithm,
+                    *user_data->lower_bounds_first, 
+                    *user_data->upper_bounds_first, 
+                    *user_data->x_init_first,
+                    user_data->algo_first,
                     first_cout
                 );
             current_error = std::get<3>(result);
@@ -58,10 +58,10 @@ double second_layer_objective(unsigned n, const double *x, double *grad, void *d
                     x[0],  // target_length 
                     r_min, 
                     x[1],  // fixed_angle
-                    *user_data->lower_bounds, 
-                    *user_data->upper_bounds, 
-                    *user_data->x_init,
-                    user_data->algorithm,
+                    *user_data->lower_bounds_first, 
+                    *user_data->upper_bounds_first, 
+                    *user_data->x_init_first,
+                    user_data->algo_first,
                     first_cout
                 );
             current_error = std::get<5>(result);
@@ -100,16 +100,32 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
     OptParms optimized_opt = opt;
     if (opt.layer) {
         std::cout << "Layer-2 opt run" << std::endl;
-        nlopt::opt second_layer_opt(nlopt::LN_COBYLA, 2); // 优化两个参数
+        nlopt::opt second_layer_opt(opt.algo_second, 2); // 优化两个参数
         
         // 设置参数边界
-        std::vector<double> lower_bounds = {min_distance - opt.target_radius, 0}; // 最小长度和角度下限
-        std::vector<double> upper_bounds = {2 * max_distance, PI}; // 最大长度和角度上限
+        if (opt.lower_bounds_second.size() == 2 && opt.upper_bounds_second.size() == 2) {
+            second_layer_opt.set_lower_bounds(opt.lower_bounds_second);
+            second_layer_opt.set_upper_bounds(opt.upper_bounds_second);
+        } else {
+            // 默认边界设置
+            std::vector<double> lower_bounds = {opt.target_length - 2000, opt.fixed_angle - 0.5}; // 最小长度和角度下限
+            std::vector<double> upper_bounds = {opt.target_length + 8000, opt.fixed_angle + 1}; // 最大长度和角度上限
+            second_layer_opt.set_lower_bounds(lower_bounds);
+            second_layer_opt.set_upper_bounds(upper_bounds);
+        }
+
+        std::vector<double> lower_bounds = {opt.target_length - 2000, opt.fixed_angle - 0.5}; // 最小长度和角度下限
+        std::vector<double> upper_bounds = {opt.target_length + 8000, opt.fixed_angle + 1}; // 最大长度和角度上限
         second_layer_opt.set_lower_bounds(lower_bounds);
         second_layer_opt.set_upper_bounds(upper_bounds);
         
-        // 初始参数值
-        std::vector<double> params = {opt.target_length, opt.fixed_angle};
+        // 初始参数值 目前初值以外部指定
+        std::vector<double> params;
+        if (opt.x_init_second.size() == 2) {
+            params = opt.x_init_second;  // 使用用户提供的初始值
+        } else {
+            params = {opt.target_length, opt.fixed_angle};  // 默认初始值
+        }
         
         // 设置最大评估次数
         second_layer_opt.set_maxeval(BEIZER_SECOND_MAXEVAL);
@@ -120,10 +136,10 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
         user_data.nodes_num = init.node_num;
         user_data.target_point = &init.target_point;
         user_data.target_radius = opt.target_radius;
-        user_data.algorithm = opt.algorithm;
-        user_data.lower_bounds = &opt.lower_bounds;
-        user_data.upper_bounds = &opt.upper_bounds;
-        user_data.x_init = &opt.init_x;
+        user_data.algo_first = opt.algo_first;
+        user_data.lower_bounds_first = &opt.lower_bounds_first;
+        user_data.upper_bounds_first = &opt.upper_bounds_first;
+        user_data.x_init_first = &opt.x_init_first;
         user_data.opt_type = opt.opt_type;
         
         // 设置目标函数
@@ -157,7 +173,7 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
         double target_length = optimized_opt.target_length;
         double radius = optimized_opt.target_radius;
         double fixed_angle = optimized_opt.fixed_angle;
-        int algorithm = optimized_opt.algorithm;
+        nlopt::algorithm algo_first = optimized_opt.algo_first;
         int num_samples = optimized_opt.num_samlpes;
 
         // 当前节点的路径点
@@ -167,10 +183,10 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
         if (opt.opt_type == 0) {  // 固定角度优化
             std::tuple<Point2D, Point2D, Point2D, double> result = findNLoptParameters_FixedAngle(
                 p0, target_point, radius, theta0, target_length, r_min, fixed_angle, 
-                optimized_opt.lower_bounds, 
-                optimized_opt.upper_bounds, 
-                optimized_opt.init_x,
-                algorithm, 
+                optimized_opt.lower_bounds_first, 
+                optimized_opt.upper_bounds_first, 
+                optimized_opt.x_init_first,
+                algo_first, 
                 false
             );
             Point2D p1 = std::get<0>(result);
@@ -184,14 +200,15 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
             node_path = getBezierCurvePoints(
                 p0, p1, p2, p3, target_point, radius, num_samples
             );
+            std::cout << "Node " << i << " r_true: " << 1 / findMaxCurvature(p0, p1, p2, p3, 0.01) << " r_min: " << r_min << std::endl;  // 计算最大曲率
         } 
         else if (opt.opt_type == 1) {  // 五次贝塞尔曲线优化
             std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> result = findNLoptParameters_QuinticFixed(
                 p0, target_point, radius, theta0, target_length, r_min, fixed_angle, 
-                optimized_opt.lower_bounds, 
-                optimized_opt.upper_bounds, 
-                optimized_opt.init_x,
-                algorithm, 
+                optimized_opt.lower_bounds_first, 
+                optimized_opt.upper_bounds_first, 
+                optimized_opt.x_init_first,
+                algo_first,
                 false
             );
             Point2D p1 = std::get<0>(result);
@@ -207,6 +224,7 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
             node_path = getQuinticBezierPoints(
                 p0, p1, p2, p3, p4, p5, target_point, radius, num_samples
             );
+            std::cout << "Node " << i << " r_true: " << 1 / findMaxQuinticCurvature(p0, p1, p2, p3, p4, p5, 0.01) << " r_min: " << r_min << std::endl;  // 计算最大曲率
         }
 
         // 将当前节点的路径添加到总路径中
@@ -214,7 +232,7 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
             all_path_points.push_back(point);
         }
     }
-    
+
     return all_path_points;  // 返回所有节点的路径点
 }
 
@@ -287,6 +305,75 @@ BEZIER_API std::vector<std::array<double, 4>> generateGeoPath(
     }
     
     return path_geo;
+}
+
+BEZIER_API bool outputMultiPathPoints(
+    const std::vector<std::array<double, 4>>& all_path_points,
+    const Point2D& target_point,
+    double target_radius,
+    int points_per_node,
+    const std::string& output_dir
+) {
+    if (all_path_points.empty() || points_per_node <= 0 || output_dir.empty()) {
+        return false;
+    }
+    
+    // 计算节点数量
+    int node_num = int(all_path_points.size() / points_per_node);
+    if (node_num * points_per_node != all_path_points.size()) {
+        std::cout << "Warning: Path points count (" << all_path_points.size() 
+                  << ") is not a multiple of points_per_node (" << points_per_node 
+                  << "). Some points may be ignored." << std::endl;
+    }
+    
+    // 创建输出目录（如果不存在）
+    #if defined(_WIN32) || defined(_WIN64)
+        std::string cmd = "if not exist \"" + output_dir + "\" mkdir \"" + output_dir + "\"";
+        system(cmd.c_str());
+    #else
+        std::string cmd = "mkdir -p \"" + output_dir + "\"";
+        system(cmd.c_str());
+    #endif
+    
+    // 为每个节点输出路径点
+    for (int i = 0; i < node_num; ++i) {
+        std::string path_file = output_dir + "/node_" + std::to_string(i+1) + "_path.txt";
+        std::ofstream path_out(path_file);
+        
+        if (path_out.is_open()) {
+            // 计算该节点的路径点在all_path_points中的索引范围
+            int start_idx = i * points_per_node;
+            int end_idx = std::min(start_idx + points_per_node, static_cast<int>(all_path_points.size()));
+            
+            path_out << "# Path points for Node " << (i+1) << std::endl;
+            path_out << "# x y z heading" << std::endl;
+            
+            // 写入该节点的路径点 - 使用空格分隔而非逗号
+            for (int j = start_idx; j < end_idx; ++j) {
+                path_out << all_path_points[j][0] << " " << all_path_points[j][1] << " " 
+                        << all_path_points[j][2] << " " << all_path_points[j][3] << std::endl;
+            }
+            path_out.close();
+            // std::cout << "Path points for Node " << (i+1) << " saved to: " << path_file << std::endl;
+        }
+    }
+    
+    // 输出目标点
+    std::string target_file = output_dir + "/target.txt";
+    std::ofstream target_out(target_file);
+    
+    if (target_out.is_open()) {
+        target_out << "# Target information" << std::endl;
+        target_out << "# x y radius" << std::endl;
+        
+        // 使用空格分隔而非逗号
+        target_out << target_point[0] << " " << target_point[1] << " " << target_radius << std::endl;
+        
+        target_out.close();
+        // std::cout << "Target point and circle saved to: " << target_file << std::endl;
+    }
+    
+    return true;
 }
 
 }

@@ -58,6 +58,15 @@ double findMaxCurvature(
     double dt = 0.01
 );
 
+double findMaxQuinticCurvature(
+    const Point2D& p0,
+    const Point2D& p1,
+    const Point2D& p2,
+    const Point2D& p3,
+    const Point2D& p4,
+    const Point2D& p5,
+    double step);
+
 const char* nloptResultToString(nlopt::result result);
 
 }

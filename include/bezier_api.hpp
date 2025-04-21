@@ -18,7 +18,7 @@
 #endif
 
 #define BEIZER_FIRST_MAXEVAL 500
-#define BEIZER_SECOND_MAXEVAL 20
+#define BEIZER_SECOND_MAXEVAL 50
 
 namespace bezier {
 
@@ -40,15 +40,19 @@ namespace bezier {
 
     struct OptParms {
         bool layer = false; // 是否为分层优化
-        int opt_type = 0; // 优化类型
+        int opt_type = 0; // 优化类型 3 or 5
         int num_samlpes = 100; // 采样点数
         double target_length = 0; // 期望长度
         double target_radius = 0; // 目标半径
         double fixed_angle = 0;   // 固定角度
-        int algorithm = nlopt::LN_COBYLA; // 优化算法
-        std::vector<double> lower_bounds = {};
-        std::vector<double> upper_bounds = {};
-        std::vector<double> init_x = {};
+        nlopt::algorithm algo_first = nlopt::LN_COBYLA;
+        nlopt::algorithm algo_second = nlopt::LN_COBYLA;
+        std::vector<double> lower_bounds_first = {};
+        std::vector<double> upper_bounds_first = {};
+        std::vector<double> x_init_first = {};
+        std::vector<double> lower_bounds_second = {};
+        std::vector<double> upper_bounds_second = {};
+        std::vector<double> x_init_second = {};
     };
     
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
@@ -58,7 +62,7 @@ namespace bezier {
         double theta0,
         double target_length,
         double r_min,
-        int algorithm = nlopt::LN_COBYLA
+        nlopt::algorithm algo = nlopt::LN_COBYLA
     );
 
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_FixedAngle(
@@ -72,7 +76,7 @@ namespace bezier {
         const std::vector<double>& lower_bounds = {},
         const std::vector<double>& upper_bounds = {},
         const std::vector<double>& init_x = {},
-        int algorithm = nlopt::LN_COBYLA,
+        nlopt::algorithm algo = nlopt::LN_COBYLA,
         bool cout_flag = true 
     );
 
@@ -87,7 +91,7 @@ namespace bezier {
         const std::vector<double>& lower_bounds = {},
         const std::vector<double>& upper_bounds = {},
         const std::vector<double>& init_x = {},
-        int algorithm = nlopt::LN_COBYLA,
+        nlopt::algorithm algo = nlopt::LN_COBYLA,
         bool cout_flag = true
     );
 
@@ -145,6 +149,17 @@ namespace bezier {
     BEZIER_API std::vector<std::array<double, 4>> generateGeoPath(
         const InitData& init_geo,
         const OptParms& opt
+    );
+
+    /**
+     * @brief output_dir likes "../.." or "." or "../"
+     */
+    BEZIER_API bool outputMultiPathPoints(
+        const std::vector<std::array<double, 4>>& all_path_points,
+        const Point2D& target_point,
+        double target_radius,
+        int points_per_node,
+        const std::string& output_dir
     );
 
     template<typename Func>

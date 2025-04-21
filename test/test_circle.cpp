@@ -23,7 +23,6 @@ int main() {
     double theta0 = bezier::PI / 4;         // 起始航向角 (45度)
     double target_length = 150.0;     // 期望的贝塞尔曲线长度
     double r_min = 30.0;              // 最小转弯半径
-    // int algorithm = 1;                // 1: LN_BOBYQA 优化算法
     
     // 调用优化函数
     std::tuple<Point2D, Point2D, Point2D, double> result = bezier::findNLoptParameters_Circle(

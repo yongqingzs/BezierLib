@@ -229,18 +229,9 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findN
     const std::vector<double>& lower_bounds,  // 默认为空向量
     const std::vector<double>& upper_bounds,  // 默认为空向量
     const std::vector<double>& init_x,
-    int algorithm,
+    nlopt::algorithm algo,
     bool cout_flag)
 {
-    // 选择算法
-    nlopt::algorithm algo;
-    switch (algorithm) {
-    case 1: algo = nlopt::LN_BOBYQA; break;
-    case 2: algo = nlopt::LN_NELDERMEAD; break;
-    case 3: algo = nlopt::LN_SBPLX; break;
-    default: algo = nlopt::LN_COBYLA; break;
-    }
-
     OptData opt_data;
     opt_data.p0 = &p0;
     opt_data.target_point = &target_point;

@@ -453,17 +453,8 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Cir
     double theta0,
     double target_length,
     double r_min,
-    int algorithm)
+    nlopt::algorithm algo)
 {
-    // 选择算法
-    nlopt::algorithm algo;
-    switch(algorithm) {
-        case 1: algo = nlopt::LN_BOBYQA; break;
-        case 2: algo = nlopt::LN_NELDERMEAD; break;
-        case 3: algo = nlopt::LN_SBPLX; break;
-        default: algo = nlopt::LN_COBYLA; break;
-    }
-    
     OptData opt_data;
     opt_data.p0 = &p0;
     opt_data.target_point = &target_point;

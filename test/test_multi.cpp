@@ -31,8 +31,8 @@ int main() {
         {-12996.951312, -12565.258044, 0.649890}
     };
     double target[3] = {0.0, 0.0, 0.0};
-    double target_r = 10000.0;
-    double target_l = 9443.569252;
+    double target_r = 5000.0;
+    double target_l = 9443.569252 + 5000;
     double r_min = 3500.0;
 
     // 创建初始数据结构
@@ -54,19 +54,21 @@ int main() {
     opt.num_samlpes = 10;                // 采样点数量(注意拼写错误)
     opt.target_length = target_l;           // 期望路径长度
     opt.target_radius = target_r;            // 目标半径
-    // opt.fixed_angle = 3.14159 / 1;       // 固定角度(弧度)
-    opt.algorithm = nlopt::LN_COBYLA;    // 优化算法
+    opt.fixed_angle = bezier::PI * 5 / 4;       // 固定角度(弧度)
+    opt.algo_first = nlopt::LN_COBYLA;    // 优化算法
+    opt.algo_second = nlopt::LN_BOBYQA;    // 优化算法
     
     std::cout << "\n3 order" << std::endl;
     std::vector<std::array<double, 4>> paths = bezier::measureTime(
         [&]() {return bezier::generateBezierPath(init, opt);},
          "3 order");
-    
-    std::cout << "\n5 order" << std::endl;
-    opt.opt_type = 1;
-    paths = bezier::measureTime(
-        [&]() {return bezier::generateBezierPath(init, opt);},
-         "5 order");
+    bezier::outputMultiPathPoints(paths, init.target_point, opt.target_radius, opt.num_samlpes, "./out");
+         
+    // std::cout << "\n5 order" << std::endl;
+    // opt.opt_type = 1;
+    // paths = bezier::measureTime(
+    //     [&]() {return bezier::generateBezierPath(init, opt);},
+    //      "5 order");
     
     return 0;
 }
