@@ -80,7 +80,11 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Fix
     double target_length,
     double r_min,
     double fixed_angle,
-    int algorithm)
+    const std::vector<double>& lower_bounds,
+    const std::vector<double>& upper_bounds,
+    const std::vector<double>& init_x,
+    int algorithm,
+    bool cout_flag)
 {
     // 选择算法
     nlopt::algorithm algo;
@@ -101,25 +105,29 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Fix
 
     nlopt::opt optimizer(algo, 2);
 
-    std::vector<double> lower_bounds(2);
-    std::vector<double> upper_bounds(2);
+    std::vector<double> lower_bounds_actual(2);
+    std::vector<double> upper_bounds_actual(2);
+    if (lower_bounds.size() == 2 && upper_bounds.size() == 2) {
+        lower_bounds_actual = lower_bounds;
+        upper_bounds_actual = upper_bounds;
+    } else {
+        // 默认边界设置
+        // d0 范围 (0 到 target_length)
+        lower_bounds_actual[0] = 10.0;
+        upper_bounds_actual[0] = target_length;
+        // d3 范围 (0 到 target_length)
+        lower_bounds_actual[1] = 10.0;
+        upper_bounds_actual[1] = target_length;
+    }
 
-    // d0 范围 (0 到 target_length)
-    lower_bounds[0] = 10.0;
-    upper_bounds[0] = target_length;
-
-    // d3 范围 (0 到 target_length)
-    lower_bounds[1] = 10.0;
-    upper_bounds[1] = target_length;
-
-    optimizer.set_lower_bounds(lower_bounds);
-    optimizer.set_upper_bounds(upper_bounds);
+    optimizer.set_lower_bounds(lower_bounds_actual);
+    optimizer.set_upper_bounds(upper_bounds_actual);
 
     optimizer.set_min_objective(objective_function_fixed_angle, &opt_data);
     optimizer.add_inequality_constraint(constraint_function_fixed_angle, &opt_data, 1e-8);
 
     optimizer.set_xtol_rel(1e-4);  // 相对误差 所有参数在连续迭代之间的相对变化都小于 0.01% 时
-    optimizer.set_maxeval(500);    // 最大评估次数
+    optimizer.set_maxeval(BEIZER_FIRST_MAXEVAL);    // 最大评估次数
 
     // 设置初始猜测值（d0和d3为中等值）
     std::vector<double> x(2);
@@ -155,11 +163,10 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Fix
         best_p3[1] + best_d3 * std::sin(fixed_angle)
     };
 
-    // std::cout << "最终结果: 终点角度 = " << fixed_angle * 180 / PI << "度, "
-    //     << "终点坐标 = (" << best_p3[0] << ", " << best_p3[1] << "), "
-    //     << "d0 = " << best_d0 << ", d3 = " << best_d3
-    //     << ", 误差 = " << min_error << std::endl;
-    std::cout << "min_error = " << min_error << std::endl;
+    if (cout_flag) {
+        std::cout << "3 order nlopt result: " << nloptResultToString(result) << std::endl;
+        std::cout << "Quintic Bezier min_error = " << min_error << std::endl;
+    }
 
     return std::make_tuple(p1, p2, best_p3, min_error);
 }

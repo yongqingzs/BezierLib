@@ -495,7 +495,7 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Cir
     optimizer.add_inequality_constraint(constraint_function, &opt_data, 1e-8);
     
     optimizer.set_xtol_rel(1e-4);  // 相对误差 所有参数在连续迭代之间的相对变化都小于 0.01% 时
-    optimizer.set_maxeval(500);    // 最大评估次数
+    optimizer.set_maxeval(BEIZER_FIRST_MAXEVAL);    // 最大评估次数
     
     // 设置初始猜测值（角度为中间值，d0和d3为中等值）
     std::vector<double> x(3);

@@ -228,7 +228,9 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findN
     double fixed_angle,
     const std::vector<double>& lower_bounds,  // 默认为空向量
     const std::vector<double>& upper_bounds,  // 默认为空向量
-    int algorithm)
+    const std::vector<double>& init_x,
+    int algorithm,
+    bool cout_flag)
 {
     // 选择算法
     nlopt::algorithm algo;
@@ -285,16 +287,23 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findN
     optimizer.add_inequality_constraint(constraint_function_quintic, &opt_data, 1e-8);
 
     optimizer.set_xtol_rel(1e-4);  // 相对误差
-    optimizer.set_maxeval(1000);   // 最大评估次数
+    optimizer.set_maxeval(BEIZER_FIRST_MAXEVAL);   // 最大评估次数
 
     // 设置初始猜测值
     std::vector<double> x(6);
-    x[0] = target_length / 5;  // a 初始值
-    x[1] = target_length / 5;  // b 初始值
-    x[2] = 0.25;               // s 初始值
-    x[3] = 0.75;               // t 初始值
-    x[4] = 0.0;                // c 初始值
-    x[5] = 0.0;                // d 初始值
+    if (init_x.size() == 6)
+    {
+        x = init_x;  // 使用用户提供的初始值
+    }
+    else
+    {
+        x[0] = target_length / 5;  // a 初始值
+        x[1] = target_length / 5;  // b 初始值
+        x[2] = 0.25;               // s 初始值
+        x[3] = 0.75;               // t 初始值
+        x[4] = 0.0;                // c 初始值
+        x[5] = 0.0;                // d 初始值
+    }
 
     // 存储最优函数值
     double min_error;
@@ -340,8 +349,11 @@ BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findN
         (1-best_t)*p0[1] + best_t*best_p5[1] + best_d*(std::cos(fixed_angle))
     };
 
-    std::cout << "nlopt result: " << nloptResultToString(result) << std::endl;
-    std::cout << "Quintic Bezier min_error = " << min_error << std::endl;
+    if (cout_flag)
+    {
+        std::cout << "5 ordernlopt result: " << nloptResultToString(result) << std::endl;
+        std::cout << "Quintic Bezier min_error = " << min_error << std::endl;
+    }
 
     return std::make_tuple(p1, p2, p3, p4, best_p5, min_error);
 }

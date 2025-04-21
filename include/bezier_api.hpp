@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <tuple>
+#include <chrono>
 #include <nlopt.hpp>
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -16,16 +17,38 @@
     #define BEZIER_API __attribute__((visibility("default")))
 #endif
 
+#define BEIZER_FIRST_MAXEVAL 500
+#define BEIZER_SECOND_MAXEVAL 20
+
 namespace bezier {
 
     using Point2D = std::array<double, 2>;
 
     // 单个弹的参数结构
-    struct BezierData {
+    struct NodeData {
         Point2D start_point;  // 起始位置
-        double theta0;        // 起始航向角
-        double speed;         // 弹速
-        double r_min;         // 最小转弯半径
+        double heading;  // 起始航向角
+        double speed;  // 弹速
+        double r_min;  // 最小转弯半径
+    };
+
+    struct InitData {
+        std::vector<NodeData> nodes;  // 弹数据
+        Point2D target_point;  // 目标点
+        int node_num = 0;  // 弹数
+    };
+
+    struct OptParms {
+        bool layer = false; // 是否为分层优化
+        int opt_type = 0; // 优化类型
+        int num_samlpes = 100; // 采样点数
+        double target_length = 0; // 期望长度
+        double target_radius = 0; // 目标半径
+        double fixed_angle = 0;   // 固定角度
+        int algorithm = nlopt::LN_COBYLA; // 优化算法
+        std::vector<double> lower_bounds = {};
+        std::vector<double> upper_bounds = {};
+        std::vector<double> init_x = {};
     };
     
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
@@ -46,7 +69,11 @@ namespace bezier {
         double target_length,
         double r_min,
         double fixed_angle,
-        int algorithm = nlopt::LN_COBYLA
+        const std::vector<double>& lower_bounds = {},
+        const std::vector<double>& upper_bounds = {},
+        const std::vector<double>& init_x = {},
+        int algorithm = nlopt::LN_COBYLA,
+        bool cout_flag = true 
     );
 
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> findNLoptParameters_QuinticFixed(
@@ -59,7 +86,9 @@ namespace bezier {
         double fixed_angle,
         const std::vector<double>& lower_bounds = {},
         const std::vector<double>& upper_bounds = {},
-        int algorithm = nlopt::LN_COBYLA
+        const std::vector<double>& init_x = {},
+        int algorithm = nlopt::LN_COBYLA,
+        bool cout_flag = true
     );
 
     BEZIER_API bool outputBezierCurvePoints(
@@ -108,16 +137,24 @@ namespace bezier {
         int num_samples = 100
     );
 
-    BEZIER_API double optimize_target_length(
-        const std::vector<bezier::Point2D>& input_XYZ,
-        const bezier::Point2D& target_point,
-        double target_radius,
-        const std::vector<double>& headings,
-        double r_min,
-        double min_target_length,
-        double max_target_length,
-        double initial_target_length
+    BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
+        const InitData& init,
+        const OptParms& opt
     );
+
+    BEZIER_API std::vector<std::array<double, 4>> generateGeoPath(
+        const InitData& init_geo,
+        const OptParms& opt
+    );
+
+    template<typename Func>
+    auto measureTime(Func func, std::string func_name) {
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = func();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::cout << func_name << " run: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000 << " ms" << std::endl;
+        return result;
+    }
 }
 
 #endif // BEZIER_API_HPP
