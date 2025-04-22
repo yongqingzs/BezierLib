@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(BezierLib VERSION 2.0 LANGUAGES CXX)
+project(BezierLib VERSION 3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,6 +34,9 @@ endif()
 
 add_definitions(-DUSE_NLOPT)
 
+find_package(OpenMP)
+add_definitions(-DUSE_OPENMP)
+
 include_directories(include ${NLOPT_INCLUDE_DIRS})
 
 # 定义库的源文件
@@ -42,6 +45,7 @@ set(LIB_SOURCES
     src/bezier_fixed.cpp
     src/bezier_quintic_fixed.cpp
     src/bezier_multi.cpp
+    src/bezier_io.cpp
 )
 
 # 添加共享库
@@ -57,20 +61,18 @@ set_target_properties(bezier PROPERTIES
 # 导出符号
 target_compile_definitions(bezier PRIVATE BEZIER_EXPORTS)
 target_link_libraries(bezier PRIVATE ${NLOPT_LIBRARIES})
+target_link_libraries(bezier PRIVATE OpenMP::OpenMP_CXX)
 
-if(MSVC)
-  add_executable(test_circle test/test_circle.cpp)
-  # target_link_libraries(test_circle ${NLOPT_LIBRARIES} $<TARGET_FILE:bezier>)
-  target_link_libraries(test_circle ${NLOPT_LIBRARIES} bezier)
+add_executable(test_circle test/test_circle.cpp)
+target_link_libraries(test_circle bezier)
 
-  add_executable(test_quintic test/test_quintic.cpp)
-  target_link_libraries(test_quintic ${NLOPT_LIBRARIES} bezier)
+add_executable(test_quintic test/test_quintic.cpp)
+target_link_libraries(test_quintic bezier)
 
-  add_executable(test_multi test/test_multi.cpp)
-  target_link_libraries(test_multi ${NLOPT_LIBRARIES} bezier) 
-endif()
+add_executable(test_multi test/test_multi.cpp)
+target_link_libraries(test_multi bezier) 
 
-# 复制DLL到输出目录（如果在MSVC上运行）
+
 if(MSVC)
   # 检查DLL文件位置
   set(NLOPT_DLL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/nlopt.dll")
@@ -83,11 +85,6 @@ if(MSVC)
   
   # 如果找到了DLL，添加复制命令
   if(EXISTS "${NLOPT_DLL_PATH}")
-    # add_custom_command(TARGET bezier_demo POST_BUILD
-    #   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    #   "${NLOPT_DLL_PATH}"
-    #   $<TARGET_FILE_DIR:bezier_demo>)
-    
     add_custom_command(TARGET bezier POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${NLOPT_DLL_PATH}"

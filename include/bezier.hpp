@@ -9,10 +9,11 @@
 #include <sstream>
 #include <limits>
 #include <algorithm>
+#include <map>
+#include <mutex>
+#include <omp.h>
 
 namespace bezier {
-
-constexpr double PI = 3.14159265358979323846;
 
 // 优化问题的数据结构
 struct OptData {
@@ -25,13 +26,16 @@ struct OptData {
     double fixed_angle;  // 固定角度
 };
 
-// 多弹优化问题的数据结构
-struct OverallOptData {
-    const std::vector<bezier::Point2D>* input_XYZ;  // 输入点列表
-    const bezier::Point2D* target_point;            // 目标点
-    double target_radius;                           // 目标圆半径
-    const std::vector<double>* headings;            // 航向角列表
-    double r_min;                                   // 最小转弯半径
+struct LayerData {
+    const std::vector<NodeData>* nodes;  // 所有节点
+    const Point2D* target_point;
+    double target_radius;
+    int nodes_num;
+    nlopt::algorithm algo_first;
+    const std::vector<double>* lower_bounds_first;
+    const std::vector<double>* upper_bounds_first;
+    const std::vector<double>* x_init_first;
+    int opt_type;
 };
 
 double calculateBezierLength(

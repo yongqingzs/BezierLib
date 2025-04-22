@@ -5,6 +5,7 @@
 #include <array>
 #include <tuple>
 #include <chrono>
+#include <iostream>
 #include <nlopt.hpp>
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -17,10 +18,13 @@
     #define BEZIER_API __attribute__((visibility("default")))
 #endif
 
+#define BEZIER_USE_PARALLEL 1
 #define BEIZER_FIRST_MAXEVAL 500
-#define BEIZER_SECOND_MAXEVAL 50
+#define BEIZER_SECOND_MAXEVAL 20
 
 namespace bezier {
+    
+    constexpr double PI = 3.14159265358979323846;
 
     using Point2D = std::array<double, 2>;
 
@@ -30,12 +34,16 @@ namespace bezier {
         double heading;  // 起始航向角
         double speed;  // 弹速
         double r_min;  // 最小转弯半径
+
+        friend std::ostream& operator<<(std::ostream& os, const NodeData& node);
     };
 
     struct InitData {
         std::vector<NodeData> nodes;  // 弹数据
         Point2D target_point;  // 目标点
         int node_num = 0;  // 弹数
+
+        friend std::ostream& operator<<(std::ostream& os, const InitData& init);
     };
 
     struct OptParms {
@@ -53,6 +61,8 @@ namespace bezier {
         std::vector<double> lower_bounds_second = {};
         std::vector<double> upper_bounds_second = {};
         std::vector<double> x_init_second = {};
+
+        friend std::ostream& operator<<(std::ostream& os, const OptParms& opt);
     };
     
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(
@@ -163,13 +173,13 @@ namespace bezier {
     );
 
     template<typename Func>
-    auto measureTime(Func func, std::string func_name) {
+    auto measureTime(Func func, std::string func_name) -> decltype(func()) {
         auto start = std::chrono::high_resolution_clock::now();
         auto result = func();
         auto end = std::chrono::high_resolution_clock::now();
         std::cout << func_name << " run: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000 << " ms" << std::endl;
         return result;
-    }
+    };
 }
 
 #endif // BEZIER_API_HPP

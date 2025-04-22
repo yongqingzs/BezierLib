@@ -2,18 +2,6 @@
 
 namespace bezier {
 
-struct LayerData {
-    const std::vector<NodeData>* nodes;  // 所有节点
-    const Point2D* target_point;
-    double target_radius;
-    int nodes_num;
-    nlopt::algorithm algo_first;
-    const std::vector<double>* lower_bounds_first;
-    const std::vector<double>* upper_bounds_first;
-    const std::vector<double>* x_init_first;
-    int opt_type;
-};
-
 // 目标函数，计算所有节点的误差之和
 double second_layer_objective(unsigned n, const double *x, double *grad, void *data) {
     LayerData* user_data = static_cast<LayerData*>(data);
@@ -21,13 +9,15 @@ double second_layer_objective(unsigned n, const double *x, double *grad, void *d
     double total_error = 0.0;
     bool first_cout = false;
 
-    // 遍历所有节点，累加误差
+    // 使用OpenMP并行计算每个节点的误差
+#if BEZIER_USE_PARALLEL == 1
+    #pragma omp parallel for reduction(+:total_error)
+#endif
     for (int i = 0; i < user_data->nodes_num; ++i) {
         const NodeData& node = (*user_data->nodes)[i];
         double theta0 = node.heading;
         double r_min = node.r_min;
         
-        // 根据优化类型计算当前节点的误差
         double current_error = 0.0;
         
         if (user_data->opt_type == 0) {  // 固定角度优化
@@ -67,7 +57,6 @@ double second_layer_objective(unsigned n, const double *x, double *grad, void *d
             current_error = std::get<5>(result);
         }
         
-        // 累加误差
         total_error += current_error;
     }
     
@@ -113,11 +102,6 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
             second_layer_opt.set_lower_bounds(lower_bounds);
             second_layer_opt.set_upper_bounds(upper_bounds);
         }
-
-        std::vector<double> lower_bounds = {opt.target_length - 2000, opt.fixed_angle - 0.5}; // 最小长度和角度下限
-        std::vector<double> upper_bounds = {opt.target_length + 8000, opt.fixed_angle + 1}; // 最大长度和角度上限
-        second_layer_opt.set_lower_bounds(lower_bounds);
-        second_layer_opt.set_upper_bounds(upper_bounds);
         
         // 初始参数值 目前初值以外部指定
         std::vector<double> params;
@@ -162,7 +146,20 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
         }
     }
 
-    // 为每个节点生成路径
+    all_path_points.resize(init.node_num * optimized_opt.num_samlpes);
+
+    // 用于收集节点计算结果的结构
+    struct NodeResult {
+        int node_idx;
+        double error;
+        double r_true;
+        double r_min;
+    };
+    std::vector<NodeResult> node_results(init.node_num);
+
+#if BEZIER_USE_PARALLEL == 1
+    #pragma omp parallel for
+#endif
     for (int i = 0; i < init.node_num; ++i) {
         const NodeData& node = init.nodes[i];
         Point2D p0 = node.start_point;
@@ -178,10 +175,15 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
 
         // 当前节点的路径点
         std::vector<std::array<double, 4>> node_path;
+        
+        // 创建结果对象
+        NodeResult result;
+        result.node_idx = i;
+        result.r_min = r_min;
 
         // 根据优化类型选择不同的算法
         if (opt.opt_type == 0) {  // 固定角度优化
-            std::tuple<Point2D, Point2D, Point2D, double> result = findNLoptParameters_FixedAngle(
+            std::tuple<Point2D, Point2D, Point2D, double> opt_result = findNLoptParameters_FixedAngle(
                 p0, target_point, radius, theta0, target_length, r_min, fixed_angle, 
                 optimized_opt.lower_bounds_first, 
                 optimized_opt.upper_bounds_first, 
@@ -189,21 +191,21 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
                 algo_first, 
                 false
             );
-            Point2D p1 = std::get<0>(result);
-            Point2D p2 = std::get<1>(result);
-            Point2D p3 = std::get<2>(result);
-            double min_error = std::get<3>(result);
-
-            std::cout << "Node " << i << " error: " << min_error << std::endl;
-
+            Point2D p1 = std::get<0>(opt_result);
+            Point2D p2 = std::get<1>(opt_result);
+            Point2D p3 = std::get<2>(opt_result);
+            
+            // 存储结果而不是立即打印
+            result.error = std::get<3>(opt_result);
+            result.r_true = 1 / findMaxCurvature(p0, p1, p2, p3, 0.01);
+            
             // 获取贝塞尔曲线上的点
             node_path = getBezierCurvePoints(
                 p0, p1, p2, p3, target_point, radius, num_samples
             );
-            std::cout << "Node " << i << " r_true: " << 1 / findMaxCurvature(p0, p1, p2, p3, 0.01) << " r_min: " << r_min << std::endl;  // 计算最大曲率
         } 
         else if (opt.opt_type == 1) {  // 五次贝塞尔曲线优化
-            std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> result = findNLoptParameters_QuinticFixed(
+            std::tuple<Point2D, Point2D, Point2D, Point2D, Point2D, double> opt_result = findNLoptParameters_QuinticFixed(
                 p0, target_point, radius, theta0, target_length, r_min, fixed_angle, 
                 optimized_opt.lower_bounds_first, 
                 optimized_opt.upper_bounds_first, 
@@ -211,27 +213,39 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
                 algo_first,
                 false
             );
-            Point2D p1 = std::get<0>(result);
-            Point2D p2 = std::get<1>(result);
-            Point2D p3 = std::get<2>(result);
-            Point2D p4 = std::get<3>(result);
-            Point2D p5 = std::get<4>(result);
-            double min_error = std::get<5>(result);
-
-            std::cout << "Node " << i << " error: " << min_error << std::endl;
-
+            Point2D p1 = std::get<0>(opt_result);
+            Point2D p2 = std::get<1>(opt_result);
+            Point2D p3 = std::get<2>(opt_result);
+            Point2D p4 = std::get<3>(opt_result);
+            Point2D p5 = std::get<4>(opt_result);
+            
+            // 存储结果而不是立即打印
+            result.error = std::get<5>(opt_result);
+            result.r_true = 1 / findMaxQuinticCurvature(p0, p1, p2, p3, p4, p5, 0.01);
+            
             // 获取五次贝塞尔曲线上的点
             node_path = getQuinticBezierPoints(
                 p0, p1, p2, p3, p4, p5, target_point, radius, num_samples
             );
-            std::cout << "Node " << i << " r_true: " << 1 / findMaxQuinticCurvature(p0, p1, p2, p3, p4, p5, 0.01) << " r_min: " << r_min << std::endl;  // 计算最大曲率
         }
+        
+        // 将结果存储到节点结果数组中
+        node_results[i] = result;
 
-        // 将当前节点的路径添加到总路径中
-        for (auto& point : node_path) {
-            all_path_points.push_back(point);
+        int start_idx = i * num_samples;
+        for (int j = 0; j < node_path.size() && j < num_samples; ++j) {
+            all_path_points[start_idx + j] = node_path[j];
         }
     }
+
+    std::cout << "\n========== Path Generation Results ==========\n";
+    for (const auto& result : node_results) {
+        std::cout << "Node " << result.node_idx << " error: " << result.error << std::endl;
+        
+        std::cout << "Node " << result.node_idx
+                    << " r_ratio: " << result.r_true / result.r_min << std::endl;
+    }
+    std::cout << "===========================================\n";
 
     return all_path_points;  // 返回所有节点的路径点
 }
@@ -332,7 +346,7 @@ BEZIER_API bool outputMultiPathPoints(
         system(cmd.c_str());
     #else
         std::string cmd = "mkdir -p \"" + output_dir + "\"";
-        system(cmd.c_str());
+        if (system(cmd.c_str())) {};
     #endif
     
     // 为每个节点输出路径点

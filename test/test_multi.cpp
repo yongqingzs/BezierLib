@@ -50,20 +50,26 @@ int main() {
     // 设置优化参数
     bezier::OptParms opt;
     opt.layer = true;                // 是否为分层优化
-    opt.opt_type = 0;                    // 0表示使用固定角度优化
     opt.num_samlpes = 10;                // 采样点数量(注意拼写错误)
     opt.target_length = target_l;           // 期望路径长度
     opt.target_radius = target_r;            // 目标半径
-    opt.fixed_angle = bezier::PI * 5 / 4;       // 固定角度(弧度)
+    opt.fixed_angle = bezier::PI * 1.25;       // 固定角度(弧度)
     opt.algo_first = nlopt::LN_COBYLA;    // 优化算法
     opt.algo_second = nlopt::LN_BOBYQA;    // 优化算法
-    
+    opt.lower_bounds_first = {};
+    opt.upper_bounds_first = {};
+    opt.x_init_first = {};
+    opt.lower_bounds_second = {};
+    opt.upper_bounds_second = {};
+    opt.x_init_second = {};
+
     std::cout << "\n3 order" << std::endl;
+    opt.opt_type = 0;  // 3 order
     std::vector<std::array<double, 4>> paths = bezier::measureTime(
         [&]() {return bezier::generateBezierPath(init, opt);},
          "3 order");
-    bezier::outputMultiPathPoints(paths, init.target_point, opt.target_radius, opt.num_samlpes, "./out");
-         
+    bezier::outputMultiPathPoints(paths, init.target_point, opt.target_radius, opt.num_samlpes, "../../out");
+    
     // std::cout << "\n5 order" << std::endl;
     // opt.opt_type = 1;
     // paths = bezier::measureTime(
