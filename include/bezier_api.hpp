@@ -19,8 +19,8 @@
 #endif
 
 #define BEZIER_USE_PARALLEL 1
-#define BEIZER_FIRST_MAXEVAL 500
-#define BEIZER_SECOND_MAXEVAL 20
+#define BEIZER_FIRST_MAXEVAL 2000
+#define BEIZER_SECOND_MAXEVAL 50
 
 namespace bezier {
     
@@ -61,8 +61,11 @@ namespace bezier {
         std::vector<double> lower_bounds_second = {};
         std::vector<double> upper_bounds_second = {};
         std::vector<double> x_init_second = {};
+        bool use_unified_opt = false;
 
         friend std::ostream& operator<<(std::ostream& os, const OptParms& opt);
+
+        OptParms& setUnifiedOpt(bool value) { use_unified_opt = value; return *this; }
     };
     
     BEZIER_API std::tuple<Point2D, Point2D, Point2D, double> findNLoptParameters_Circle(

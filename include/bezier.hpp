@@ -38,6 +38,16 @@ struct LayerData {
     int opt_type;
 };
 
+// 先添加新的数据结构用于单层优化
+struct UnifiedData {
+    const std::vector<NodeData>* nodes;
+    int nodes_num;
+    const Point2D* target_point;
+    double target_radius;
+    int params_per_node;
+    int opt_type;
+};
+
 double calculateBezierLength(
     const Point2D& p0, 
     const Point2D& p1, 
@@ -70,6 +80,17 @@ double findMaxQuinticCurvature(
     const Point2D& p4,
     const Point2D& p5,
     double step);
+
+double calculateQuinticBezierLength(
+    const Point2D& p0, 
+    const Point2D& p1, 
+    const Point2D& p2,
+    const Point2D& p3,
+    const Point2D& p4,
+    const Point2D& p5,
+    int steps);
+
+const char* nloptAlgorithmToString(nlopt::algorithm alg);
 
 const char* nloptResultToString(nlopt::result result);
 

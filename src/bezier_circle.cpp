@@ -417,24 +417,6 @@ double constraint_function(const std::vector<double> &x, std::vector<double> &gr
     return max_curvature - 1.0/opt_data->r_min;
 }
 
-/** NLopt结果转换为字符串
- */
-const char* nloptResultToString(nlopt::result result) {
-    switch(static_cast<int>(result)) {
-        case 1: return "SUCCESS";
-        case 2: return "STOPVAL_REACHED";
-        case 3: return "FTOL_REACHED";
-        case 4: return "XTOL_REACHED";
-        case 5: return "MAXEVAL_REACHED";
-        case -1: return "FAILURE";
-        case -2: return "INVALID_ARGS";
-        case -3: return "OUT_OF_MEMORY";
-        case -4: return "ROUNDOFF_LIMITED";
-        case -5: return "FORCED_STOP";
-        default: return "UNKNOWN";
-    }
-}
-
 /**
  * 在目标点固定距离圆上寻找最优终点和控制点参数（使用NLopt）
  * 
