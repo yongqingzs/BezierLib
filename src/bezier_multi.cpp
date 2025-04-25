@@ -358,7 +358,7 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
     
     // 选择优化方法 - 如果use_unified_opt为true则使用集合优化，否则使用双层优化
     if (opt.use_unified_opt) {
-        std::cout << "Running unified optimization...";
+        std::cout << "\nRunning unified optimization...";
         std::cout << nloptAlgorithmToString(opt.algo_first);
         if (opt.opt_type == 0) {
             std::cout << " (Cubic Bezier) ";
@@ -631,13 +631,13 @@ BEZIER_API std::vector<std::array<double, 4>> generateBezierPath(
         }
         
         // 输出结果信息
-        std::cout << "\n========== Unified Optimization Results ==========\n";
+        std::cout << "========== Unified Optimization Results ==========\n";
         for (const auto& result : node_results) {
             std::cout << "Node " << result.node_idx << " error: " << result.error << std::endl;
             std::cout << "Node " << result.node_idx
                     << " r_ratio: " << result.r_true / result.r_min << std::endl;
         }
-        std::cout << "===========================================\n";
+        std::cout << "==================================================\n";
     }
     else {
         // 原来的双层优化代码 - 保持不变
@@ -809,71 +809,14 @@ BEZIER_API std::vector<std::array<double, 4>> generateGeoPath(
     const InitData& init_geo,
     const OptParms& opt
 ) {
-    const double a = 6378137.0;  // WGS84椭球体长半轴(m)
-    const double f = 1/298.257223563;  // WGS84扁率
-    const double e2 = 2*f - f*f;  // 第一偏心率平方
+    // 将地理坐标系转换为局部坐标系
+    InitData init_local = convertGeoToLocal(init_geo);
     
-    // 使用目标点作为坐标原点(输入经纬度已经是弧度)
-    double lat0 = init_geo.target_point[1];  // 纬度(弧度)
-    double lon0 = init_geo.target_point[0];  // 经度(弧度)
-    
-    // 计算该纬度下的子午圈半径
-    double N = a / sqrt(1 - e2 * sin(lat0) * sin(lat0));
-    double M = a * (1 - e2) / pow(1 - e2 * sin(lat0) * sin(lat0), 1.5);
-    
-    // 转换为局部坐标系的初始数据
-    InitData init_local = init_geo;
-    init_local.target_point = {0.0, 0.0};  // 局部坐标系中目标点为原点
-    
-    // 转换各个节点的坐标
-    for (auto& node : init_local.nodes) {
-        // 输入经纬度已经是弧度
-        double lat = node.start_point[1];  // 纬度(弧度)
-        double lon = node.start_point[0];  // 经度(弧度)
-        
-        // 计算经纬度差值(弧度)
-        double dLat = lat - lat0;
-        double dLon = lon - lon0;
-        
-        // 转换为局部坐标系(考虑地球椭球)
-        double y = M * dLat;  // 纬度差对应的距离(m)
-        double x = N * cos(lat0) * dLon;  // 经度差对应的距离(m)
-        
-        node.start_point = {x, y};
-        
-        // 航向角修正(假设输入航向角也是弧度)
-        double heading_correction = atan2(sin(dLon) * cos(lat), 
-                                       cos(lat0) * sin(lat) - sin(lat0) * cos(lat) * cos(dLon));
-        node.heading = node.heading - heading_correction;
-    }
-    
-    // 调用平面坐标系下的路径生成函数
+    // 使用局部坐标系生成路径
     auto path_local = generateBezierPath(init_local, opt);
     
-    // 将局部坐标转换回经纬度
-    std::vector<std::array<double, 4>> path_geo;
-    for (const auto& point : path_local) {
-        double x = point[0];
-        double y = point[1];
-        
-        // 转回经纬度差值(弧度)
-        double dLat = y / M;
-        double dLon = x / (N * cos(lat0));
-        
-        // 计算实际经纬度(弧度)
-        double lat = lat0 + dLat;
-        double lon = lon0 + dLon;
-        
-        // 航向角也需要进行修正(返回弧度)
-        double heading_correction = atan2(sin(dLon) * cos(lat), 
-                                       cos(lat0) * sin(lat) - sin(lat0) * cos(lat) * cos(dLon));
-        double heading = point[2] + heading_correction;
-        
-        // 输出格式: 经度(弧度),纬度(弧度),高度(默认0),航向角(弧度)
-        path_geo.push_back({lon, lat, 0.0, heading});
-    }
-    
-    return path_geo;
+    // 将局部坐标系路径转回地理坐标系
+    return convertLocalToGeo(path_local, init_geo.target_point);
 }
 
 BEZIER_API bool outputMultiPathPoints(

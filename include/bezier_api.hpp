@@ -25,6 +25,8 @@
 namespace bezier {
     
     constexpr double PI = 3.14159265358979323846;
+    constexpr double RAD = 0.0174532925199432;	    //conversion factor deg->rad
+    constexpr double DEG = 57.2957795130823;		//conversion factor rad->deg
 
     using Point2D = std::array<double, 2>;
 
@@ -164,9 +166,7 @@ namespace bezier {
         const OptParms& opt
     );
 
-    /**
-     * @brief output_dir likes "../.." or "." or "../"
-     */
+    // output_dir likes "../.." or "." or "../"
     BEZIER_API bool outputMultiPathPoints(
         const std::vector<std::array<double, 4>>& all_path_points,
         const Point2D& target_point,
@@ -174,6 +174,18 @@ namespace bezier {
         int points_per_node,
         const std::string& output_dir
     );
+
+    BEZIER_API std::array<double, 3> convertGeoToENU(
+        double lon, double lat, double h,
+        double lon0, double lat0, double h0 = 0.0
+    );
+
+    BEZIER_API std::array<double, 3> convertENUToGeo(
+        double E, double N, double U,
+        double lon0, double lat0, double h0 = 0.0
+    );
+
+    BEZIER_API std::tuple<double, double, double> inverseVincenty(double lon1, double lat1, double lon2, double lat2);
 
     template<typename Func>
     auto measureTime(Func func, std::string func_name) -> decltype(func()) {

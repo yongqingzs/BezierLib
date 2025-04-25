@@ -90,6 +90,12 @@ double calculateQuinticBezierLength(
     const Point2D& p5,
     int steps);
 
+InitData convertGeoToLocal(const InitData& init_geo);
+
+std::vector<std::array<double, 4>> convertLocalToGeo(
+    const std::vector<std::array<double, 4>>& path_local, 
+    const Point2D& origin_geo);
+
 const char* nloptAlgorithmToString(nlopt::algorithm alg);
 
 const char* nloptResultToString(nlopt::result result);

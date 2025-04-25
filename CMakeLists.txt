@@ -46,6 +46,7 @@ set(LIB_SOURCES
     src/bezier_quintic_fixed.cpp
     src/bezier_multi.cpp
     src/bezier_io.cpp
+    src/geo_convert.cpp
 )
 
 # 添加共享库
@@ -56,6 +57,7 @@ set_target_properties(bezier PROPERTIES
     # VERSION ${PROJECT_VERSION}
     # SOVERSION ${PROJECT_VERSION_MAJOR}
     PUBLIC_HEADER "include/bezier_api.hpp"
+    PRIVATE_HEADER "include/bezier.hpp"
 )
 
 # 导出符号
@@ -70,7 +72,10 @@ add_executable(test_quintic test/test_quintic.cpp)
 target_link_libraries(test_quintic bezier)
 
 add_executable(test_multi test/test_multi.cpp)
-target_link_libraries(test_multi bezier) 
+target_link_libraries(test_multi bezier)
+
+add_executable(test_geo test/test_geo.cpp)
+target_link_libraries(test_geo bezier)
 
 
 if(MSVC)
